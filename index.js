@@ -45,28 +45,30 @@ function setup() {
   canvas.style('margin', '0 auto');
   console.log('👋 Hello! Type a message and press Enter to chat.');
   textAlign(LEFT, TOP);
-  textSize(16);
+  textFont('Arial'); // Set text font to Arial
+  textSize(18); // Make text a bit bigger
   fill(0);  
   inputBox = createInput();
   inputBox.attribute('placeholder', 'Type your dream')
   inputBox.style('width', '70%');
   inputBox.style('padding', '10px');
-  inputBox.position((windowWidth - inputBox.width) / 2, (height - inputBox.height-200));
+  inputBox.position((windowWidth - inputBox.width) / 2, (height - inputBox.height - 100)); // Adjusted to create space above the input box
   inputBox.style('font-size', '16px');
   inputBox.style('border', '1px solid #ccc');
   inputBox.style('border-radius', '5px');
   inputBox.style('box-shadow', '0 2px 4px rgba(0, 0, 0, 0.1)');
   
   tryAgainButton = createButton('Try Again');
-  tryAgainButton.position((width - inputBox.width) / 2 + inputBox.width + 30, (height - 40));
+tryAgainButton.position((width - inputBox.width) / 2 + inputBox.width + 30, (height - 80));
   tryAgainButton.style('padding', '10px 20px');
   tryAgainButton.style('font-size', '16px');
-  tryAgainButton.style('background-color', '#007BFF');
+  tryAgainButton.style('background-color', '#000000');
   tryAgainButton.style('color', '#FFF');
   tryAgainButton.style('border', 'none');
   tryAgainButton.style('border-radius', '5px');
   tryAgainButton.style('cursor', 'pointer');
   tryAgainButton.style('transition', 'background-color 0.3s ease');
+  tryAgainButton.position((windowWidth - tryAgainButton.width) / 2, (height - 80)); // Centered position
   tryAgainButton.hide(); 
   tryAgainButton.mousePressed(restartPage);
 }
@@ -152,7 +154,7 @@ function draw() {
   });
   if (isGenerating) {
     textAlign(CENTER);
-    text("Bot is typing...", width / 2, height - 180);
+    text("Bot is typing...", width / 2, height - inputBox.height - 160);
   }
 }
 
