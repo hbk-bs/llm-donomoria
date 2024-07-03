@@ -1,3 +1,4 @@
+let llm;
 let chatLog = [
   { 
     role: "system",
@@ -36,7 +37,17 @@ const dreamDescriptions = [
 
 ];
 
+function preload() {
+if(window.LLM){
+  console.log("🚀 LLM is loaded!");
+}else{
+  console.log("❌ LLM is not loaded!");
+}
+}
+
 function setup() {
+  llm = new LLM({ host: 'https://donomoria-openai_api.web.val.run' });
+
   let canvasWidth = windowWidth * 0.7;
   let canvasHeight = windowHeight;
   
@@ -109,30 +120,37 @@ async function sendMessage() {
 }
 
 async function generateBotResponse(userMessage) {
-  let response = await fetch('http://localhost:11434/api/chat', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: "llama3",
-      stream: false,
-      options: {
-        temperature: 0.1,
-        seed: 23
-      },
-      messages: [
-        ...chatLog,
-        { 
-          role: "user",
-          content: userMessage
-        }
-      ]
-    })
-  });
-  let data = await response.json();
 
-  return data.message.content;
+  // let response = await fetch('http://localhost:11434/api/chat', {
+  //   method: 'POST',
+  //   headers: {
+  //     'Content-Type': 'application/json',
+  //   },
+  //   body: JSON.stringify({
+  //     model: "llama3",
+  //     stream: false,
+  //     options: {
+  //       temperature: 0.1,
+  //       seed: 23
+  //     },
+  //     messages: [
+  //       ...chatLog,
+  //       { 
+  //         role: "user",
+  //         content: userMessage
+  //       }
+  //     ]
+  //   })
+  // });
+  const response = await  llm.chat({ format: 'text', options: { seed: 23, temperature: 0.1 },   messages: [
+    ...chatLog,
+    { 
+      role: "user",
+      content: userMessage
+    }
+  ] });
+  
+  return response.completion.choices[0].message.content;
 }
 
 function draw() {

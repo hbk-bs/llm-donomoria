@@ -8,8 +8,10 @@
     <link rel="stylesheet" href="style.css">
 
     <script type="module">
+      import {LLM} from "./llm.js";
     import ollama from "https://esm.sh/ollama/browser";
     window.ollama = ollama;
+    window.LLM = LLM;
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/p5@1.9.3/lib/p5.js"></script>
