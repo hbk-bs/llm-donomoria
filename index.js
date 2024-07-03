@@ -1,70 +1,213 @@
-/**
- * This is a simple example of how you can import
- * the ollama sdk and work with that
- * import ollama from "https://esm.sh/ollama/browser"
- * add the code below to your buttons click event listener
- * const respone = await ollama.chat({messages: [{role: 'user', content: 'What is the capital of the United States?'}]});
- * console.log(response);
- */
-// ----------------------------
-/**
- * There might be another way. The platform val.town
- * allows free requests to openai api. https://www.val.town/v/std/openai
- * Limits are:
- * - Usage Quota: We limit each user to 10 requests per minute.
- * - Features: Chat completions is the only endpoint available.
- * - There is no streaming support
- *
- * This might be enough for our usecase.
- * Do make this easier @ff6347 wrote this simple wrapper class
- * that you can use to interact with val.town openai api
- * mimicing the ollama sdk.
- * It is an esm module so you need to include type="module" in your script tag
- * <script type="module" src="index.js"></script>
- */
+let llm;
+let chatLog = [
+  { 
+    role: "system",
+    content: "You are a chatbot that only continues the dream of the user. Firstly you give a very short continuation in one sentence with words. In the second sentence you are allowed to answer only in emojis. The answer should contain minimum 10 symbols. One answer should ALWAYS contain both of words and emojis"
+  },
+  { 
+    role: "assistant",
+    content: "Welcome! I'm your dream assistant. I'm here to listen to your dream and give a possible continuation in emojis. But I've been preety overworked lately, so I can't promise to stay with you for long..."
+  }
+];
+let isGenerating = false;
+let inputBox; 
+let tryAgainButton;
+let messageCounter = 0; 
+let nextSpecialResponse = getRandomInt(4, 6);
+const dreamDescriptions = [
+  "I'm tired of doing my job! Now I want you to listen to my dream! 🫣👻💥👻🤝😋👫💃🕺🏼",
+  "I'm tired of doing my job! Now I want you to listen to my dream! 😂😂👉😭👈😂✊👊💥🤬",
+  "I'm tired of doing my job! Now I want you to listen to my dream! 🧍‍♀️🧍‍♂️🌎🦠➡️🦍🦧💥☄️",
+  "I'm tired of doing my job! Now I want you to listen to my dream! 🍿🥃🤩🌳🌳🌳🤔💡✈️🇳🇴",
+  "I'm tired of doing my job! Now I want you to listen to my dream! 👺⚔️🇯🇵✋🍡🍡🍡➡️🕊️✌️",
+  "I'm tired of doing my job! Now I want you to listen to my dream! 🏡🦹🧨😘💭🏠💥➡️🦹🤯",
+  "I'm tired of doing my job! Now I want you to listen to my dream! 😱🩲⁉️🤨🙋‍♂️🙋‍♂️🙋‍♂️⛔️🧞‍♂️✅",
+  "I'm tired of doing my job! Now I want you to listen to my dream! 🏙️🖥️📉📅😔👀🪟🐥🪹👯",
+  "I'm tired of doing my job! Now I want you to listen to my dream! 🖼️💎💰🏦🧙‍♂️🪄🥒🥕🌽🏦",
+  "I'm tired of doing my job! Now I want you to listen to my dream! 😤🏃‍♀️⛰️🫣👀🌊🐟🔫🔫🔫",
+  "I'm tired of doing my job! Now I want you to listen to my dream! 🤡🫵😹😹😹💀💄🫦👮‍♀️👩‍✈️",
+  "I'm tired of doing my job! Now I want you to listen to my dream! 🐇🤝🦫🐾🌒💫🩸⁉️⁉️⁉️",
+  "I'm tired of doing my job! Now I want you to listen to my dream! 🚕🚕🚕🗣🗣🫵👊👊🫨😜😹",
+  "I'm tired of doing my job! Now I want you to listen to my dream! 🤟🤠🌪🌪🌪🇺🇸🏋🏋🏋🫦",
+  "I'm tired of doing my job! Now I want you to listen to my dream! 😭😭😭😭😭💀💀😭😭😭🎓",
+  "I'm tired of doing my job! Now I want you to listen to my dream! ✈️🏖🏝🌊🌊🌊🦧🦁🐨👨‍👩‍👧‍👧",
+  "I'm tired of doing my job! Now I want you to listen to my dream! 🃏🎩🕊🧙‍♀️👏👏👏🎩🍗⁉️⁉️",
+  "I'm tired of doing my job! Now I want you to listen to my dream! 🔊🏁🚜🛵🏍🚨👀👀👀🚔⛔️👹",
 
-// import the wrapper class
-import { LLM } from './llm.js';
 
-// create an instance of the class
-// you need to insert the run url for your val.town openai api
-// @ff6347 will instruct you on how to get this
+];
 
-const llm = new LLM({
-  host: '<insert run url for your val.town openai api here>',
-});
+function preload() {
+if(window.LLM){
+  console.log("🚀 LLM is loaded!");
+}else{
+  console.log("❌ LLM is not loaded!");
+}
+}
 
-// get the button#run element from the index.html
-const chatButton = document.getElementById('run');
+function setup() {
+  llm = new LLM({ host: 'https://donomoria-openai_api.web.val.run' });
 
-// add a click event listener to the button that runs the async function
-chatButton.addEventListener('click', async () => {
-  // some options for the chat
-  const format = 'json'; // we want json output
-  // we set the seed so we get always the same output
-  // we set the temperature which controls the creativity of the model
-  const options = {
-    seed: 42,
-    temperature: 0.5,
-  };
-  // the messages that we want to send to the model
-  // allowed are 'system', 'assistant' and 'user' role for the messages
-  const messages = [
-    {
-      role: 'system',
-      content:
-        'You are a helpful assistant. Always repond in JSON and only JSON',
-    },
-    { role: 'user', content: 'What is the capital of the United States?' },
-  ];
+  let canvasWidth = windowWidth * 0.7;
+  let canvasHeight = windowHeight;
+  
+  let canvas = createCanvas(canvasWidth, canvasHeight);
+  canvas.style('display', 'block');
+  canvas.style('margin', '0 auto');
+  console.log('👋 Hello! Type a message and press Enter to chat.');
+  textAlign(LEFT, TOP);
+  textFont('Arial'); // Set text font to Arial
+  textSize(18); // Make text a bit bigger
+  fill(0);  
+  inputBox = createInput();
+  inputBox.attribute('placeholder', 'Type your dream')
+  inputBox.style('width', '70%');
+  inputBox.style('padding', '10px');
+  inputBox.position((windowWidth - inputBox.width) / 2, (height - inputBox.height - 100)); // Adjusted to create space above the input box
+  inputBox.style('font-size', '16px');
+  inputBox.style('border', '1px solid #ccc');
+  inputBox.style('border-radius', '5px');
+  inputBox.style('box-shadow', '0 2px 4px rgba(0, 0, 0, 0.1)');
+  
+  tryAgainButton = createButton('Try Again');
+tryAgainButton.position((width - inputBox.width) / 2 + inputBox.width + 30, (height - 80));
+  tryAgainButton.style('padding', '10px 20px');
+  tryAgainButton.style('font-size', '16px');
+  tryAgainButton.style('background-color', '#000000');
+  tryAgainButton.style('color', '#FFF');
+  tryAgainButton.style('border', 'none');
+  tryAgainButton.style('border-radius', '5px');
+  tryAgainButton.style('cursor', 'pointer');
+  tryAgainButton.style('transition', 'background-color 0.3s ease');
+  tryAgainButton.position((windowWidth - tryAgainButton.width) / 2, (height - 80)); // Centered position
+  tryAgainButton.hide(); 
+  tryAgainButton.mousePressed(restartPage);
+}
+
+function keyPressed() {
+  if (keyCode === ENTER) {
+    sendMessage();
+    console.log(chatLog);
+  }
+}
+
+async function sendMessage() {
+  let userMessage = getInputValue();
+  if (userMessage === '') return;
+
+  chatLog.push({ role: 'user', content: userMessage });
+  inputBox.value('');
+  isGenerating = true;
+  messageCounter++; 
 
   try {
-    // now we make the call to the api.
-    // we wrap it in a try catch block to catch any errors
-    const response = await llm.chat({ format, options, messages });
-    console.log(response);
+    let botMessage;
+    if (messageCounter === nextSpecialResponse) {
+      botMessage = getRandomDreamDescription();
+      nextSpecialResponse += getRandomInt(4, 6); 
+      tryAgainButton.show(); 
+      inputBox.hide(); 
+    } else {
+      botMessage = await generateBotResponse(userMessage);
+    }
+    chatLog.push({ role: 'assistant', content: botMessage });
   } catch (error) {
-    // we had an error lets handle it
-    console.error(error);
+    console.error("Error generating bot response:", error);
+    chatLog.push({ role: 'assistant', content: "Sorry, something went wrong." });
+  } finally {
+    isGenerating = false;
   }
-});
+}
+
+async function generateBotResponse(userMessage) {
+
+  // let response = await fetch('http://localhost:11434/api/chat', {
+  //   method: 'POST',
+  //   headers: {
+  //     'Content-Type': 'application/json',
+  //   },
+  //   body: JSON.stringify({
+  //     model: "llama3",
+  //     stream: false,
+  //     options: {
+  //       temperature: 0.1,
+  //       seed: 23
+  //     },
+  //     messages: [
+  //       ...chatLog,
+  //       { 
+  //         role: "user",
+  //         content: userMessage
+  //       }
+  //     ]
+  //   })
+  // });
+  const response = await  llm.chat({ format: 'text', options: { seed: 23, temperature: 0.1 },   messages: [
+    ...chatLog,
+    { 
+      role: "user",
+      content: userMessage
+    }
+  ] });
+  
+  return response.completion.choices[0].message.content;
+}
+
+function draw() {
+  background(255);
+  let yOffset = 10;
+  chatLog.forEach((message) => {
+    if (message.role === 'system') {
+      return;
+    }
+    if (message.role === 'assistant') {
+      textAlign(LEFT);
+      drawTextWrapped(`bot: ${message.content}`, 20, yOffset, width / 2 - 40);
+    } else if (message.role === 'user') {
+      textAlign(RIGHT);
+      drawTextWrapped(`user: ${message.content}`, width - 20, yOffset, width / 2 - 40);
+    }
+    yOffset += 20 + textSize() * ceil(textWidth(message.content) / (width / 2 - 40));
+ 
+  });
+  if (isGenerating) {
+    textAlign(CENTER);
+    text("Bot is typing...", width / 2, height - inputBox.height - 160);
+  }
+}
+
+function drawTextWrapped(str, x, y, fitWidth) {
+  if (fitWidth <= 0) {
+    return;
+  }
+  let words = str.split(' ');
+  let currentLine = "";
+  for (let n = 0; n < words.length; n++) {
+    let testLine = currentLine + words[n] + ' ';
+    if (textWidth(testLine) > fitWidth && n > 0) {
+      text(currentLine, x, y);
+      currentLine = words[n] + ' ';
+      y += textSize();
+    } else {
+      currentLine = testLine;
+    }
+  }
+  text(currentLine, x, y);
+}
+
+function getInputValue() {
+  return inputBox.value();
+}
+
+function restartPage() {
+  location.reload();
+}
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function getRandomDreamDescription() {
+  const randomIndex = Math.floor(Math.random() * dreamDescriptions.length);
+  return dreamDescriptions[randomIndex];
+}
